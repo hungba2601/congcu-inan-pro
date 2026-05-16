@@ -1,0 +1,1225 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CÔNG CỤ HỖ TRỢ IN ẤN PRO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Tải thư viện SheetJS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- Html2Pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --sidebar-bg: #1e293b;
+            --border-color: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --paper-bg: #ffffff;
+            --paper-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 350px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .copyright-footer {
+            padding: 15px 20px;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .config-section {
+            padding: 20px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .classes-container {
+            margin-top: 24px;
+            background-color: var(--bg-color);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            max-height: 250px;
+        }
+
+        .classes-header {
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: rgba(255, 255, 255, 0.02);
+        }
+
+        .classes-header label {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .text-btn {
+            background: none;
+            border: none;
+            color: var(--primary-color);
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .class-list {
+            padding: 10px 0;
+            overflow-y: auto;
+        }
+
+        .empty-list {
+            padding: 20px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .class-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 15px;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .class-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .class-item input[type="checkbox"] {
+            accent-color: var(--primary-color);
+            width: 16px;
+            height: 16px;
+        }
+
+        .action-buttons {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .btn-primary, .btn-secondary {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 12px;
+            border-radius: 6px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Preview Area */
+        .preview-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: #0f172a;
+        }
+
+        .preview-header {
+            padding: 15px 24px;
+            background-color: var(--sidebar-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .preview-wrapper {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+            background-color: #e2e8f0;
+        }
+
+        .a4-paper {
+            width: 210mm;
+            min-height: 297mm;
+            background-color: var(--paper-bg);
+            color: #000;
+            padding: 1mm 8mm; /* Giảm thêm lề để lấy chỗ cho 55 học sinh */
+            box-shadow: var(--paper-shadow);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        .nowrap { white-space: nowrap; } /* Class chống xuống dòng */
+
+        .vertical-text {
+            writing-mode: vertical-rl;
+            transform: rotate(180deg);
+            white-space: nowrap;
+            text-align: left;
+            max-height: 75px; /* Giảm thêm một chút */
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .print-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0px; /* Bỏ hẳn khoảng cách để tiết kiệm chỗ */
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 11pt; /* Giảm cỡ chữ header */
+        }
+
+        .header-left { width: 45%; text-align: center; }
+        .header-right { width: 55%; text-align: center; }
+        .bold { font-weight: bold; }
+        .uppercase { text-transform: uppercase; }
+        .title-lg { font-size: 12pt; margin-bottom: 0px; } /* Giảm nhẹ cỡ chữ tiêu đề */
+
+        .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 10px;
+        }
+
+        .print-table th, .print-table td {
+            border: 1px solid #000;
+            padding: 1px 3px; /* Ép padding dọc cực nhỏ */
+            text-align: center;
+            vertical-align: middle;
+            line-height: 1.1;
+        }
+
+        .name-col {
+            text-align: left !important;
+            white-space: nowrap; /* Ép tên không được xuống dòng */
+            padding-left: 5px !important;
+        }
+
+        .print-container { display: none; }
+
+        @media print {
+            @page { size: A4 portrait; margin: 0; }
+            body * { visibility: hidden; }
+            .app-container { display: none !important; }
+            #printContainer, #printContainer * { visibility: visible; }
+            #printContainer {
+                display: block;
+                position: absolute;
+                left: 0; top: 0; width: 100%;
+                background-color: white;
+            }
+            .a4-paper {
+                width: 210mm; 
+                height: 296mm; /* Giảm 1mm để tránh tạo thêm trang trắng */
+                padding: 2mm 10mm; /* Khớp với lề trên màn hình */
+                box-shadow: none;
+                page-break-after: always;
+                margin: 0;
+                overflow: hidden;
+                border: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container no-print">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                </div>
+                <h2>IN ẤN PRO</h2>
+            </div>
+
+            <div class="config-section">
+                <!-- Upload Group -->
+                <div class="input-group" style="margin-bottom: 24px;">
+                    <label style="font-size: 1rem; color: var(--primary-color); font-weight: 600; margin-bottom: 10px;">1. Tải lên file Excel</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="file" id="fileInput" accept=".xlsx, .xls" multiple style="flex: 1; min-width: 0; padding: 10px; background-color: rgba(59, 130, 246, 0.05); border: 2px dashed var(--primary-color); border-radius: 6px; color: var(--text-primary); cursor: pointer;">
+                        <button type="button" id="readFileBtn" class="btn-primary" style="padding: 0 15px; border-radius: 6px; width: auto; font-weight: 600;">Đọc File</button>
+                    </div>
+                </div>
+
+                <div class="input-group" id="subjectGroup" style="display: none; background-color: rgba(59, 130, 246, 0.05); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <label style="font-size: 0.9rem; color: var(--primary-color); font-weight: 600;">Chọn môn học để xử lý</label>
+                    <select id="subjectSelect" style="width: 100%; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); background-color: #0f172a; color: white; font-size: 0.95rem; outline: none; margin-top: 5px; cursor: pointer;"></select>
+                </div>
+
+                <div class="input-group" style="background-color: rgba(59, 130, 246, 0.05); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-bottom: 24px;">
+                    <label style="font-size: 1rem; color: var(--primary-color); font-weight: 600; margin-bottom: 10px; display: block;">2. Chọn loại bảng điểm</label>
+                    <div style="display: flex; flex-direction: column; gap: 10px; font-size: 0.95rem;">
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                            <input type="radio" name="reportType" value="1" checked style="width: 16px; height: 16px; cursor: pointer;"> 
+                            Sổ điểm cá nhân
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                            <input type="radio" name="reportType" value="2" style="width: 16px; height: 16px; cursor: pointer;"> 
+                            Bảng điểm tổng hợp HK
+                        </label>
+                        <label style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                            <input type="radio" name="reportType" value="3" style="width: 16px; height: 16px; cursor: pointer;"> 
+                            Bảng điểm tổng hợp Cả năm
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Info Inputs -->
+                <div class="input-group">
+                    <label>Đơn vị chủ quản</label>
+                    <input type="text" id="donVi" value="UBND PHƯỜNG AN NHƠN">
+                </div>
+                <div class="input-group">
+                    <label>Tên trường</label>
+                    <input type="text" id="tenTruong" value="THCS AN NHƠN">
+                </div>
+                <div class="input-group">
+                    <label>Tiêu đề bảng điểm</label>
+                    <input type="text" id="tieuDe" value="BẢNG ĐIỂM HỌC KỲ">
+                </div>
+                <div class="input-group">
+                    <label>Năm học</label>
+                    <input type="text" id="namHoc" value="Năm học: 2025-2026 - Học kỳ: II">
+                </div>
+
+                <!-- Class List Container -->
+                <div class="classes-container">
+                    <div class="classes-header">
+                        <label>Chọn Lớp</label>
+                        <button class="text-btn" id="selectAllBtn">Chọn tất cả</button>
+                    </div>
+                    <div class="class-list" id="classList">
+                        <div class="empty-list">Vui lòng chọn file và bấm "Đọc File"</div>
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button id="configBtn" class="btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path></svg>
+                        Cấu Hình & Xem Trước
+                    </button>
+                </div>
+            </div>
+            
+            <div class="copyright-footer">
+                <div>© 2025 CÔNG CỤ IN ẤN PRO</div>
+                <div style="margin-top: 4px; font-weight: 500;">Made by Nguyễn Phi Hùng</div>
+                <div style="font-size: 0.7rem; opacity: 0.8;">Zalo: 0938750424</div>
+            </div>
+        </aside>
+
+        <main class="preview-area">
+            <div class="preview-header">
+                <h3>Xem trước bản in</h3>
+                <div class="preview-controls" style="display: flex; align-items: center; gap: 10px;">
+                    <span>Cỡ chữ cơ bản (Tự động nhỏ nếu lớp đông):</span>
+                    <input type="number" id="fontSizeSetting" value="9" min="8" max="20" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--border-color); background-color: var(--sidebar-bg); color: var(--text-primary); outline: none;">
+                    <span>px</span>
+                    <button id="printBtn" style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; margin-left: 15px; border-radius: 6px; font-weight: 600; cursor: pointer; border: none; background-color: var(--primary-color); color: white; transition: background 0.2s;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                        In / Lưu PDF (Cực nhanh)
+                    </button>
+                </div>
+            </div>
+            <div id="previewWrapper" class="preview-wrapper">
+                <div class="empty-preview">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <p>Bản xem trước sẽ hiển thị tại đây</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Container cho lệnh in thực tế -->
+    <div id="printContainer" class="print-container"></div>
+
+    <script>
+        let uploadedWorkbooks = [];
+        let currentWorkbook = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const fileInput = document.getElementById('fileInput');
+            const classList = document.getElementById('classList');
+            const selectAllBtn = document.getElementById('selectAllBtn');
+            const configBtn = document.getElementById('configBtn');
+            const printBtn = document.getElementById('printBtn');
+            const previewWrapper = document.getElementById('previewWrapper');
+            const printContainer = document.getElementById('printContainer');
+            const fontSizeSetting = document.getElementById('fontSizeSetting');
+            const readFileBtn = document.getElementById('readFileBtn');
+            const subjectSelect = document.getElementById('subjectSelect');
+            const subjectGroup = document.getElementById('subjectGroup');
+            
+            const tieuDeInput = document.getElementById('tieuDe');
+            document.querySelectorAll('input[name="reportType"]').forEach(radio => {
+                radio.addEventListener('change', (e) => {
+                    if (e.target.value === '1') tieuDeInput.value = "BẢNG ĐIỂM HỌC KỲ";
+                    else if (e.target.value === '2') tieuDeInput.value = "BẢNG ĐIỂM TỔNG HỢP HK";
+                    else if (e.target.value === '3') tieuDeInput.value = "BẢNG ĐIỂM TỔNG HỢP CẢ NĂM";
+                });
+            });
+
+            // Xử lý đọc đồng thời nhiều file
+            readFileBtn.addEventListener('click', async () => {
+                if (!fileInput.files || fileInput.files.length === 0) {
+                    alert('Bạn chưa chọn file Excel nào! Vui lòng bấm nút "Chọn tệp" trước.');
+                    return;
+                }
+                
+                if (typeof XLSX === 'undefined') {
+                    alert('Lỗi: Thư viện SheetJS chưa tải được. Hãy đảm bảo bạn có kết nối internet!');
+                    return;
+                }
+
+                classList.innerHTML = '<div class="empty-list">Đang đọc dữ liệu...</div>';
+                subjectGroup.style.display = 'none';
+                uploadedWorkbooks = [];
+                
+                try {
+                    const files = Array.from(fileInput.files);
+                    
+                    for (const file of files) {
+                        const data = await readFileAsArrayBuffer(file);
+                        const wb = XLSX.read(data, {type: 'array'});
+                        
+                        // Lấy tên môn từ G3 của sheet đầu tiên
+                        let subjectName = file.name;
+                        const firstSheetName = wb.SheetNames[0];
+                        const firstSheet = wb.Sheets[firstSheetName];
+                        if (firstSheet && firstSheet['G3'] && firstSheet['G3'].v) {
+                            subjectName = firstSheet['G3'].v;
+                        }
+
+                        uploadedWorkbooks.push({
+                            id: Date.now() + Math.random(),
+                            name: subjectName,
+                            filename: file.name,
+                            workbook: wb
+                        });
+                    }
+                    
+                    // Hiển thị dropdown chọn môn
+                    subjectSelect.innerHTML = '';
+                    uploadedWorkbooks.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.id;
+                        
+                        // Rút gọn chữ "Môn học: " và " - GV:"
+                        let display = item.name;
+                        if (display.includes('Môn học:')) {
+                            display = display.split('- GV')[0].replace('Môn học:', '').trim();
+                        }
+                        if (!display) display = item.filename;
+                        
+                        option.textContent = display + ' (' + item.filename + ')';
+                        subjectSelect.appendChild(option);
+                    });
+                    
+                    subjectGroup.style.display = 'block';
+                    
+                    // Tự động kích hoạt chọn môn đầu tiên
+                    subjectSelect.dispatchEvent(new Event('change'));
+                    
+                } catch(err) {
+                    alert('Lỗi khi đọc file: ' + err.message);
+                    classList.innerHTML = '<div class="empty-list" style="color: red;">Lỗi đọc file.</div>';
+                }
+            });
+
+            function readFileAsArrayBuffer(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = e => resolve(new Uint8Array(e.target.result));
+                    reader.onerror = e => reject(new Error('Không thể đọc file'));
+                    reader.readAsArrayBuffer(file);
+                });
+            }
+
+            // Khi người dùng đổi môn học
+            subjectSelect.addEventListener('change', () => {
+                const selectedId = subjectSelect.value;
+                const selectedItem = uploadedWorkbooks.find(w => w.id == selectedId);
+                if (!selectedItem) return;
+                
+                currentWorkbook = selectedItem.workbook;
+                
+                // Cập nhật danh sách lớp tương ứng với môn
+                classList.innerHTML = '';
+                currentWorkbook.SheetNames.forEach(sheetName => {
+                    const item = document.createElement('label');
+                    item.className = 'class-item';
+                    item.innerHTML = `
+                        <input type="checkbox" value="${sheetName}" checked>
+                        <span>Lớp ${sheetName}</span>
+                    `;
+                    classList.appendChild(item);
+                });
+            });
+
+            // Chọn tất cả / Bỏ chọn tất cả
+            let allSelected = true;
+            selectAllBtn.addEventListener('click', () => {
+                allSelected = !allSelected;
+                const checkboxes = classList.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(cb => cb.checked = allSelected);
+                selectAllBtn.textContent = allSelected ? "Bỏ chọn tất cả" : "Chọn tất cả";
+            });
+
+            // Hàm tiện ích tạo HTML cho 1 trang A4
+            function buildPageHtml(sheetName, tieuDe, namHoc, g3Text, donVi, tenTruong, contentHtml) {
+                return `
+                    <div class="a4-paper">
+                        <div class="print-header">
+                            <div class="header-left">
+                                <div>${donVi}</div>
+                                <div class="bold">${tenTruong}</div>
+                                <div>Lớp: ${sheetName}</div>
+                            </div>
+                            <div class="header-right">
+                                <div class="bold uppercase title-lg">${tieuDe}</div>
+                                <div>${namHoc}</div>
+                                <div>${g3Text}</div>
+                            </div>
+                        </div>
+                        ${contentHtml}
+                    </div>
+                `;
+            }
+
+            // Nút Cấu hình & Xem trước
+            configBtn.addEventListener('click', () => {
+                if (!currentWorkbook) {
+                    alert('Vui lòng chọn file và bấm "Đọc File" trước!');
+                    return;
+                }
+
+                const selectedClasses = Array.from(classList.querySelectorAll('input[type="checkbox"]:checked')).map(cb => cb.value);
+                if (selectedClasses.length === 0) {
+                    alert('Vui lòng tích chọn ít nhất một lớp!');
+                    return;
+                }
+
+                const reportType = document.querySelector('input[name="reportType"]:checked').value;
+                const donVi = document.getElementById('donVi').value;
+                const tenTruong = document.getElementById('tenTruong').value;
+                const tieuDe = document.getElementById('tieuDe').value;
+                const namHoc = document.getElementById('namHoc').value;
+                const fontSize = (parseInt(fontSizeSetting.value) || 9) + 'px';
+
+                previewWrapper.innerHTML = '';
+                printContainer.innerHTML = '';
+
+                selectedClasses.forEach(sheetName => {
+                    const sheet = currentWorkbook.Sheets[sheetName];
+                    const data = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" }); // Bỏ giới hạn A1:Z100 để đọc đủ 200 dòng
+
+                    let g3Text = '';
+                    if (sheet['G3'] && sheet['G3'].v) g3Text = sheet['G3'].v;
+                    else if (data[2] && data[2][6]) g3Text = data[2][6];
+
+                    let headerRowIndex = 4;
+                    let sttColIdx = 0;
+                    let nameColIdx = 1;
+                    
+                    // Mở rộng tìm kiếm tiêu đề để đảm bảo không sót bảng
+                    for (let r = 0; r < Math.min(20, data.length); r++) {
+                        if (data[r]) {
+                            let found = false;
+                            for (let c = 0; c < Math.min(10, data[r].length); c++) {
+                                const val = String(data[r][c] || "").trim().toLowerCase();
+                                if (val === 'stt' || val === 'tt') {
+                                    headerRowIndex = r;
+                                    sttColIdx = c;
+                                    found = true;
+                                }
+                                if (val === 'họ và tên' || val === 'họ tên') {
+                                    nameColIdx = c;
+                                }
+                            }
+                            if (found) break;
+                        }
+                    }
+
+                    // Loại 1: Ép lấy dữ liệu từ dòng 7 (index 6) nếu tiêu đề ở dòng 5 (index 4)
+                    // Hoặc tự động lấy r+2 từ vị trí STT được tìm thấy.
+
+                    let gvcn = '';
+                    if (reportType === '2' || reportType === '3') {
+                        gvcn = String((data[4] || [])[0] || '').replace('GVCN:', '').trim();
+                        if (!gvcn) gvcn = String((data[4] || [])[1] || '').replace('GVCN:', '').trim(); // Fallback nếu cột A bị rỗng
+                        if (!gvcn) gvcn = '..............................';
+                    }
+
+                    if (reportType === '1') {
+                        const tableHtml = generateTableHtml(sheet, data, headerRowIndex, fontSize, reportType, sttColIdx, nameColIdx);
+                        const pageHtml = buildPageHtml(sheetName, tieuDe, namHoc, g3Text, donVi, tenTruong, tableHtml);
+                        previewWrapper.insertAdjacentHTML('beforeend', pageHtml);
+                        printContainer.insertAdjacentHTML('beforeend', pageHtml);
+                    } 
+                    else if (reportType === '2') {
+                        const tableHtml = generateTableHtml(sheet, data, headerRowIndex, fontSize, reportType, sttColIdx, nameColIdx);
+                        const gvcnHtml = `<div style="margin-top: 5px; margin-bottom: 5px; font-weight: bold; text-align: left; font-family: 'Times New Roman', Times, serif;">GVCN: ${gvcn}</div>`;
+                        const pageHtml = buildPageHtml(sheetName, tieuDe, namHoc, g3Text, donVi, tenTruong, gvcnHtml + tableHtml);
+                        previewWrapper.insertAdjacentHTML('beforeend', pageHtml);
+                        printContainer.insertAdjacentHTML('beforeend', pageHtml);
+                    }
+                    else if (reportType === '3') {
+                        let students = [];
+                        let currentRow = headerRowIndex + 2;
+                        while (currentRow < data.length && currentRow <= headerRowIndex + 200) {
+                            const tt = String((data[currentRow] || [])[sttColIdx] || "").trim();
+                            const name = String((data[currentRow] || [])[nameColIdx] || "").trim();
+                            const nameLower = name.toLowerCase();
+                            const ttLower = tt.toLowerCase();
+                            
+                            if ((tt || name) && !nameLower.includes("học kỳ") && !nameLower.includes("cả năm") && !ttLower.includes("học kỳ")) {
+                                students.push({ startRow: currentRow, endRow: currentRow + 2 });
+                                currentRow += 3;
+                            } else {
+                                currentRow++;
+                            }
+                        }
+
+                        const mid = Math.ceil(students.length / 2);
+                        const page1Students = students.slice(0, mid);
+                        const page2Students = students.slice(mid);
+
+                        const p1EndRow = page1Students.length > 0 ? page1Students[page1Students.length - 1].endRow : headerRowIndex + 2;
+                        const tableHtml1 = generateTableHtml(sheet, data, headerRowIndex, fontSize, reportType, sttColIdx, nameColIdx, headerRowIndex + 2, p1EndRow);
+                        
+                        const p2StartRow = page2Students.length > 0 ? page2Students[0].startRow : headerRowIndex + 2;
+                        const p2EndRow = data.length - 1;
+                        const tableHtml2 = generateTableHtml(sheet, data, headerRowIndex, fontSize, reportType, sttColIdx, nameColIdx, p2StartRow, p2EndRow);
+
+                        const gvcnHtml = `<div style="margin-top: 5px; margin-bottom: 5px; font-weight: bold; text-align: left; font-family: 'Times New Roman', Times, serif;">GVCN: ${gvcn}</div>`;
+                        
+                        const page1Html = buildPageHtml(sheetName, tieuDe, namHoc, g3Text, donVi, tenTruong, gvcnHtml + tableHtml1);
+                        const classHtml2 = `<div style="margin-top: 0; margin-bottom: 5px; font-weight: bold; text-align: left; font-family: 'Times New Roman', Times, serif;">Lớp: ${sheetName}</div>`;
+                        const page2Html = `<div class="a4-paper" style="padding-top: 5mm; display: flex; flex-direction: column;">
+                            ${classHtml2}
+                            ${tableHtml2}
+                        </div>`;
+
+                        previewWrapper.insertAdjacentHTML('beforeend', page1Html);
+                        printContainer.insertAdjacentHTML('beforeend', page1Html);
+                        if (page2Students.length > 0) {
+                            previewWrapper.insertAdjacentHTML('beforeend', page2Html);
+                            printContainer.insertAdjacentHTML('beforeend', page2Html);
+                        }
+                    }
+                });
+            });
+
+            // Nút In thực tế (Dùng lệnh in hệ thống cho nhanh và đẹp)
+            printBtn.addEventListener('click', () => {
+                if (printContainer.innerHTML.trim() === '') {
+                    alert('Vui lòng Cấu Hình & Xem Trước trước khi xuất PDF!');
+                    return;
+                }
+                
+                // Sử dụng lệnh in hệ thống
+                window.print();
+            });
+
+            // Thay đổi cỡ chữ nhanh
+            fontSizeSetting.addEventListener('change', () => {
+                const tables = document.querySelectorAll('.print-table');
+                tables.forEach(t => t.style.fontSize = fontSizeSetting.value + 'px');
+            });
+
+            // Hàm tạo bảng HTML
+            function generateTableHtml(sheet, data, startRowIndex, fontSize, reportType, sttColIdx, nameColIdx, customStartDataRow = null, customEndDataRow = null) {
+                const merges = sheet['!merges'] || [];
+                const colsInfo = sheet['!cols'] || [];
+                const isColHidden = (c) => {
+                    if (reportType === '1') return false; // Hiển thị tất cả cột cho loại 1 để tránh mất cột điểm ẩn
+                    return colsInfo[c] && colsInfo[c].hidden;
+                };
+
+                const range = XLSX.utils.decode_range(sheet['!ref'] || "A1:Z200");
+                let maxCols = range && range.e ? Math.max(range.e.c + 1, 15) : 15;
+
+                // Tự động tìm cột cuối cùng THỰC TẾ có tiêu đề để tránh hiện cột trắng thừa (Khung đỏ)
+                let actualMaxCols = 0;
+                for (let r = startRowIndex; r <= startRowIndex + 5; r++) {
+                    const row = data[r] || [];
+                    for (let c = row.length - 1; c >= 0; c--) {
+                        if (row[c] !== undefined && row[c] !== null && String(row[c]).trim() !== "") {
+                            actualMaxCols = Math.max(actualMaxCols, c + 1);
+                            break;
+                        }
+                    }
+                }
+                if (actualMaxCols > 0) maxCols = Math.min(maxCols, actualMaxCols);
+
+                let studentCount = 0;
+                let endRowIndex;
+                let dataStartRow = startRowIndex + 2;
+
+                if (reportType === '1') {
+                    dataStartRow = startRowIndex + 2; 
+                    endRowIndex = Math.max(startRowIndex + 56, data.length - 1); 
+                    if (endRowIndex < 59) endRowIndex = 59; 
+                    studentCount = Math.max(studentCount, 55);
+                } else if (reportType === '2') {
+                    endRowIndex = Math.min(startRowIndex + 75, data.length - 1);
+                } else if (reportType === '3') {
+                    dataStartRow = customStartDataRow !== null ? customStartDataRow : startRowIndex + 2;
+                    endRowIndex = customEndDataRow !== null ? customEndDataRow : Math.min(startRowIndex + 200, data.length - 1);
+                }
+
+                for (let r = dataStartRow; r <= (reportType==='3' ? Math.min(dataStartRow + 200, data.length - 1) : endRowIndex); r++) {
+                    const rowData = data[r] || [];
+                    let nameVal = String(rowData[nameColIdx] || "").trim();
+                    const sttVal = String(rowData[sttColIdx] || "").trim();
+                    
+                    if (reportType === '1' && nameVal === "" && rowData[nameColIdx + 1]) {
+                        nameVal = String(rowData[nameColIdx + 1]).trim();
+                    }
+
+                    const anyVal = rowData.slice(0, 5).some(v => String(v || "").trim() !== "");
+                    
+                    if (nameVal !== "" || sttVal !== "" || (reportType === '1' && anyVal)) {
+                        if (reportType === '3') {
+                            if (sttVal !== "") studentCount++;
+                        } else {
+                            studentCount++;
+                        }
+                    }
+                }
+
+                let baseSize = parseInt(fontSize) || 9;
+                let finalFontSize = baseSize;
+                let customPadding = "2px";
+                let tableId = "tbl-" + Math.random().toString(36).substr(2, 9);
+                
+                if (reportType === '1' || reportType === '2') {
+                    if (studentCount >= 55) {
+                        finalFontSize = Math.min(baseSize, 15);
+                        customPadding = "2px";
+                    } else if (studentCount >= 50) {
+                        finalFontSize = Math.min(baseSize, 16);
+                        customPadding = "2.5px";
+                    } else {
+                        finalFontSize = Math.min(baseSize, 18);
+                        customPadding = "3px";
+                    }
+                } else if (reportType === '3') {
+                    let summaryBuffer = (customEndDataRow === data.length - 1) ? 8 : 0;
+                    // Với mục 3, scale dựa trên số dòng hiển thị thực tế
+                    let displayRows = studentCount + summaryBuffer;
+                    if (displayRows >= 30) {
+                        finalFontSize = Math.min(baseSize, 7.8);
+                        customPadding = "0.5px";
+                    } else if (displayRows >= 25) {
+                        finalFontSize = Math.min(baseSize, 8.5);
+                        customPadding = "1px";
+                    } else {
+                        finalFontSize = Math.min(baseSize, 9.5);
+                        customPadding = "2px";
+                    }
+                }
+
+                const hiddenCols = new Set();
+                if (reportType === '1') {
+                    // Ẩn các cột đặc biệt (nhận xét, mã định danh...)
+                    for (let r = startRowIndex; r <= startRowIndex + 1; r++) {
+                        if (!data[r]) continue;
+                        for (let c = 0; c < maxCols; c++) {
+                            const cellVal = String(data[r][c] || "").toLowerCase();
+                            if (cellVal.includes("nhận xét") || cellVal.includes("mã định danh")) {
+                                hiddenCols.add(c);
+                            }
+                        }
+                    }
+
+                    // === TỰ ĐỘNG ẨN CỘT ĐIỂM TRỐNG ===
+                    // Xác định cột nào là cột điểm (không phải STT, Họ tên, Ngày sinh, Giới tính)
+                    const fixedCols = new Set();
+                    for (let r = startRowIndex; r <= startRowIndex + 1; r++) {
+                        const rowData = data[r] || [];
+                        for (let c = 0; c < maxCols; c++) {
+                            const v = String(rowData[c] || "").trim().toLowerCase();
+                            if (v === "stt" || v === "tt" || v === "họ và tên" || v === "họ tên" ||
+                                v.includes("ngày sinh") || v === "giới tính" || v === "hk") {
+                                fixedCols.add(c);
+                            }
+                        }
+                    }
+
+                    // Quét toàn bộ dữ liệu: cột điểm nào không có giá trị nào -> ẩn đi
+                    for (let c = 0; c < maxCols; c++) {
+                        if (hiddenCols.has(c) || fixedCols.has(c)) continue;
+                        let hasData = false;
+                        for (let r = dataStartRow; r <= endRowIndex; r++) {
+                            // Kiểm tra trực tiếp từ sheet (ổn định hơn)
+                            const cellAddress = XLSX.utils.encode_cell({ r: r, c: c });
+                            const cell = sheet[cellAddress];
+                            if (cell && String(cell.v || "").trim() !== "") {
+                                hasData = true;
+                                break;
+                            }
+                        }
+                        if (!hasData) {
+                            hiddenCols.add(c);
+                        }
+                    }
+
+                    // Sau khi ẩn cột trống, tăng cỡ chữ dựa vào số cột còn lại
+                    const visibleColCount = Array.from({length: maxCols}, (_, i) => i)
+                        .filter(c => !isColHidden(c) && !hiddenCols.has(c)).length;
+                    // Mỗi cột ẩn đi = thêm ~0.3px cỡ chữ (tối đa 11px)
+                    finalFontSize = Math.min(11, finalFontSize + (20 - visibleColCount) * 0.2);
+                }
+
+                let colgroupHtml = '<colgroup>';
+                let autoColsCount = 0;
+                const explicitWidths = {};
+                
+                let dobColIdx = -1;
+
+                // Xác định các cột tiêu đề dòng 2 (dòng phụ): "1","2","3","4"...
+                const row2Data = data[startRowIndex + 1] || [];
+
+                for (let c = 0; c < maxCols; c++) {
+                    if (isColHidden(c) || hiddenCols.has(c)) continue;
+                    const headerRow1 = String((data[startRowIndex] || [])[c] || "").trim().toLowerCase();
+                    const headerRow2 = String(row2Data[c] || "").trim().toLowerCase();
+
+                    if (headerRow1 === "tt" || headerRow1 === "stt") {
+                        explicitWidths[c] = (reportType === '3') ? 2.5 : (reportType === '2' ? 2.5 : 1.5);
+                    } else if (headerRow1 === "họ và tên" || headerRow1 === "họ tên") {
+                        explicitWidths[c] = (reportType === '3' || reportType === '2') ? 18 : 9;
+                    } else if (headerRow1.includes("ngày sinh")) {
+                        explicitWidths[c] = 5;      // Ngày sinh (nowrap)
+                        dobColIdx = c;
+                    } else if (headerRow1 === "giới tính") {
+                        explicitWidths[c] = (reportType === '3' || reportType === '2') ? 3 : 2;
+                    } else if (headerRow1 === "hk" || headerRow1 === "học kỳ") {
+                        explicitWidths[c] = (reportType === '3' || reportType === '2') ? 4 : 3;
+                    } else if (headerRow1 === "danh hiệu") {
+                        explicitWidths[c] = (reportType === '3') ? 5 : 6;
+                    } else if (headerRow1 === "trạng thái lên lớp") {
+                        explicitWidths[c] = (reportType === '3') ? 5 : 6;
+                    } else if (/^\d+$/.test(headerRow2)) {
+                        explicitWidths[c] = 2;      // Điểm TX
+                    } else if (
+                        headerRow1.includes("đđg") || headerRow2.includes("đđg") ||
+                        headerRow1.includes("gk") || headerRow2.includes("gk") ||
+                        headerRow1.includes("ck") || headerRow2.includes("ck") ||
+                        headerRow1.includes("đtbm") || headerRow2.includes("đtbm") ||
+                        headerRow1.includes("tbm") || headerRow2.includes("tbm")
+                    ) {
+                        explicitWidths[c] = 2.5;    // Điểm TK
+                    } else {
+                        autoColsCount++;
+                    }
+                }
+
+                let remainingWidth = 100 - Object.values(explicitWidths).reduce((a, b) => a + b, 0);
+                let autoColWidth = autoColsCount > 0 ? (remainingWidth / autoColsCount) : 0;
+
+                for (let c = 0; c < maxCols; c++) {
+                    if (isColHidden(c) || hiddenCols.has(c)) continue;
+                    let w = explicitWidths[c] !== undefined ? explicitWidths[c] : autoColWidth;
+                    // Với mục 2 và 3, đảm bảo độ rộng tối thiểu cho các cột tự động (các môn học)
+                    if ((reportType === '3' || reportType === '2') && explicitWidths[c] === undefined) {
+                        w = Math.max(w, 2.5); 
+                    }
+                    colgroupHtml += `<col style="width: ${w}%;">`;
+                }
+                colgroupHtml += '</colgroup>';
+
+                // Tách biệt line-height: Mục 1 cần cao, Mục 2-3 cần thấp
+                let finalLineHeight = (reportType === '1') ? "1.2" : "1.1";
+
+                let tableStyle, cellStyle;
+                if (reportType === '1') {
+                    // Chiến lược tối ưu: table-layout:auto + nowrap
+                    // → Trình duyệt tự co cột điểm về kích thước nhỏ nhất, chỉ Họ tên giãn ra
+                    tableStyle = `font-size: ${finalFontSize}px; line-height: ${finalLineHeight}; table-layout: auto; width: 100%;`;
+                    cellStyle = `<style>
+                        #${tableId} { border-collapse: collapse; }
+                        #${tableId} th, #${tableId} td {
+                            padding: ${customPadding} 1px !important;
+                            white-space: nowrap;
+                            text-align: center;
+                            overflow: hidden;
+                        }
+                        #${tableId} td.name-col, #${tableId} th.name-col {
+                            white-space: normal;
+                            text-align: left;
+                            width: auto; /* Để tên chiếm phần còn lại nhưng không quá rộng */
+                            min-width: 150px;
+                        }
+                        /* Tiêu đề cho phép ngắt dòng để cột co lại */
+                        #${tableId} th.wrap-header {
+                            white-space: normal;
+                            word-break: break-word;
+                            width: 1%; /* Ép tiêu đề co lại */
+                        }
+                        /* Dữ liệu luôn 1 dòng và co lại tối đa */
+                        #${tableId} td, #${tableId} th:not(.name-col) {
+                            white-space: nowrap;
+                            width: 1%;
+                        }
+                    </style>`;
+                } else if (reportType === '2' || reportType === '3') {
+                    // Mục 2 & 3 dùng Table fixed để kiểm soát độ rộng % chính xác
+                    tableStyle = `font-size: ${finalFontSize}px; line-height: ${finalLineHeight}; table-layout: fixed; width: 100%;`;
+                    cellStyle = `<style>
+                        #${tableId} { border-collapse: collapse; }
+                        #${tableId} th, #${tableId} td { 
+                            padding: ${customPadding} 1px !important; 
+                            border: 1px solid black;
+                            text-align: center;
+                            word-wrap: break-word;
+                            overflow: hidden;
+                        }
+                        #${tableId} td.name-col { 
+                            text-align: left; 
+                            white-space: nowrap; /* Mục 2 ép 1 dòng */
+                            padding-left: 3px !important;
+                        }
+                        #${tableId} th.wrap-header {
+                            white-space: normal;
+                        }
+                    </style>`;
+                } else {
+                    tableStyle = `font-size: ${finalFontSize}px; line-height: ${finalLineHeight};`;
+                    cellStyle = `<style>#${tableId} { table-layout: fixed; width: 100%; } #${tableId} th, #${tableId} td { padding: ${customPadding} !important; word-wrap: break-word; overflow-wrap: break-word; }</style>`;
+                }
+
+                let html = cellStyle;
+                html += `<table id="${tableId}" class="print-table" style="${tableStyle}">`;
+                // Chỉ dùng colgroup cho type 2 và 3
+                if (reportType !== '1') html += colgroupHtml;
+                const skipCells = {};
+                
+                // HEADER
+                for (let r = startRowIndex; r < startRowIndex + 2; r++) {
+                    const rowData = data[r] || [];
+                    html += '<tr>';
+                    for (let c = 0; c < maxCols; c++) {
+                        if (isColHidden(c) || hiddenCols.has(c)) continue;
+                        if (skipCells[`${r},${c}`]) continue;
+
+                        let val = rowData[c];
+                        if (val === undefined || val === null) val = "";
+
+                        let rowspan = 1, colspan = 1;
+                        const merge = merges.find(m => m.s.r === r && m.s.c === c);
+                        if (merge) {
+                            rowspan = merge.e.r - merge.s.r + 1;
+                            colspan = 0;
+                            for (let mc = merge.s.c; mc <= Math.min(merge.e.c, maxCols - 1); mc++) { 
+                                if (!isColHidden(mc) && !hiddenCols.has(mc)) colspan++; 
+                            }
+                            for (let mr = merge.s.r; mr <= merge.e.r; mr++) {
+                                for (let mc = merge.s.c; mc <= Math.min(merge.e.c, maxCols - 1); mc++) {
+                                    if (mr === r && mc === c) continue;
+                                    skipCells[`${mr},${mc}`] = true;
+                                }
+                            }
+                        }
+                        if (colspan > 0) {
+                            let span = (colspan > 1 ? ` colspan="${colspan}"` : '') + (rowspan > 1 ? ` rowspan="${rowspan}"` : '');
+                            let displayVal = String(val).replace(/\n/g, '<br>');
+                            let headerCellClass = '';
+
+                            // Type 1: Tự động ngắt dòng tiêu đề để cột co nhỏ lại
+                            if (reportType === '1') {
+                                const valLower = String(val).trim().toLowerCase();
+                                if (valLower.includes('giới tính')) {
+                                    displayVal = 'Giới<br>tính';
+                                    headerCellClass = ' wrap-header';
+                                } else if (valLower.includes('ngày sinh')) {
+                                    displayVal = 'Ngày<br>sinh';
+                                    headerCellClass = ' wrap-header';
+                                } else if (valLower.includes('đtbm') || valLower.includes('tbm') || valLower.includes('đtbm')) {
+                                    // ĐTBm hk1, ĐTBmhk2, ĐTBmcn...
+                                    displayVal = displayVal
+                                        .replace(/(đtbm|dtbm|tbm)(\s*)(hk1|hk\.1)/gi, 'ĐTBm<br>hk1')
+                                        .replace(/(đtbm|dtbm|tbm)(\s*)(hk2|hk\.2)/gi, 'ĐTBm<br>hk2')
+                                        .replace(/(đtbm|dtbm|tbm)(\s*)(cn)/gi, 'ĐTBm<br>cn')
+                                        .replace(/(đtbm|dtbm|tbm)(\s*)(m)/gi, 'ĐTBm<br>m');
+                                    headerCellClass = ' wrap-header';
+                                } else if (valLower.includes('đđg')) {
+                                    displayVal = displayVal
+                                        .replace(/(đđg)(\s*)(gk)/gi, 'ĐĐG<br>gk')
+                                        .replace(/(đđg)(\s*)(ck)/gi, 'ĐĐG<br>ck');
+                                    if (displayVal !== String(val)) headerCellClass = ' wrap-header';
+                                }
+                            }
+                            
+                            if ((reportType === '2' || reportType === '3') && String(val).trim() !== "") {
+                                const valLower = String(val).trim().toLowerCase().replace(/\n/g, ' ');
+                                const horizontalHeaders = [
+                                    "tt", "stt", "họ và tên", "họ tên", "hk", "học kỳ", "nghỉ", 
+                                    "số ngày/buổi nghỉ", "số ngày nghỉ", "học kỳ i", "học kỳ ii", "cả năm"
+                                ];
+                                if (!horizontalHeaders.includes(valLower) && !valLower.includes("học kỳ") && !valLower.includes("cả năm")) {
+                                    displayVal = `<div class="vertical-text">${displayVal}</div>`;
+                                }
+                            }
+                            html += `<th${span} class="${headerCellClass.trim()}" style="vertical-align: bottom;">${displayVal}</th>`;
+                        }
+                    }
+                    html += '</tr>';
+                }
+
+                const customMerges = {};
+                if (reportType === '3') {
+                    // Tìm các cột đặc biệt cần gộp 3 dòng
+                    let statusColIdx = -1;
+                    let danhHieuColIdx = -1;
+                    for (let c = 0; c < maxCols; c++) {
+                        let h1 = String((data[startRowIndex] || [])[c] || "").trim().toLowerCase();
+                        let h2 = String((data[startRowIndex + 1] || [])[c] || "").trim().toLowerCase();
+                        if (h1.includes("trạng thái") || h1.includes("lên lớp") || h2.includes("lên lớp")) statusColIdx = c;
+                        if (h1.includes("danh hiệu") || h2.includes("danh hiệu")) danhHieuColIdx = c;
+                    }
+
+                    for (let r = dataStartRow; r <= endRowIndex; r += 3) {
+                        const tt = String((data[r] || [])[sttColIdx] || "").trim();
+                        const name = String((data[r] || [])[nameColIdx] || "").trim();
+                        const nameL = name.toLowerCase();
+                        const ttL = tt.toLowerCase();
+                        
+                        // Chỉ gộp 3 dòng nếu đó là dòng học sinh (có STT hoặc Tên và không chứa từ khóa tổng kết)
+                        if ((tt || name) && !nameL.includes("học kỳ") && !nameL.includes("cả năm") && !ttL.includes("học kỳ")) {
+                            customMerges[`${r},${sttColIdx}`] = 3; 
+                            customMerges[`${r},${nameColIdx}`] = 3; 
+                            skipCells[`${r+1},${sttColIdx}`] = true;
+                            skipCells[`${r+2},${sttColIdx}`] = true;
+                            skipCells[`${r+1},${nameColIdx}`] = true;
+                            skipCells[`${r+2},${nameColIdx}`] = true;
+
+                            // Gộp cột Trạng thái lên lớp (Luôn gộp để xóa kẻ khung thừa)
+                            if (statusColIdx !== -1) {
+                                let val = String(data[r][statusColIdx] || "").trim() || 
+                                          String((data[r+1] || [])[statusColIdx] || "").trim() || 
+                                          String((data[r+2] || [])[statusColIdx] || "").trim();
+                                data[r][statusColIdx] = val; 
+                                customMerges[`${r},${statusColIdx}`] = 3;
+                                skipCells[`${r+1},${statusColIdx}`] = true;
+                                skipCells[`${r+2},${statusColIdx}`] = true;
+                            }
+
+                            // Gộp cột Danh hiệu (Luôn gộp để xóa kẻ khung thừa)
+                            if (danhHieuColIdx !== -1) {
+                                let val = String(data[r][danhHieuColIdx] || "").trim() || 
+                                          String((data[r+1] || [])[danhHieuColIdx] || "").trim() || 
+                                          String((data[r+2] || [])[danhHieuColIdx] || "").trim();
+                                data[r][danhHieuColIdx] = val;
+                                customMerges[`${r},${danhHieuColIdx}`] = 3;
+                                skipCells[`${r+1},${danhHieuColIdx}`] = true;
+                                skipCells[`${r+2},${danhHieuColIdx}`] = true;
+                            }
+                        }
+                    }
+                }
+
+                // DATA
+                for (let r = dataStartRow; r <= endRowIndex; r++) {
+                    const rowData = data[r] || [];
+                    let nameVal = "";
+                    // Thử lấy tên từ cột B, C hoặc D (vị trí 1, 2, 3)
+                    for (let nc = nameColIdx; nc <= nameColIdx + 2; nc++) {
+                        const cellAddress = XLSX.utils.encode_cell({ r: r, c: nc });
+                        const cell = sheet[cellAddress];
+                        const v = cell ? String(cell.v || "").trim() : "";
+                        if (v && !nameVal) nameVal = v;
+                    }
+
+                    let sttVal = "";
+                    const sttCell = sheet[XLSX.utils.encode_cell({ r: r, c: sttColIdx })];
+                    sttVal = sttCell ? String(sttCell.v || "").trim() : "";
+                    
+                    if (reportType !== '3' && reportType !== '1') {
+                        if (nameVal === "" && sttVal === "") continue;
+                    }
+
+                    html += '<tr>';
+                    for (let c = 0; c < maxCols; c++) {
+                        if (isColHidden(c) || hiddenCols.has(c)) continue;
+                        if (skipCells[`${r},${c}`]) continue;
+
+                        let val = "";
+                        const cellAddress = XLSX.utils.encode_cell({ r: r, c: c });
+                        const cell = sheet[cellAddress];
+                        if (cell) {
+                            val = cell.v;
+                        } else if (data[r] && data[r][c] !== undefined) {
+                            val = data[r][c];
+                        }
+                        
+                        if (val === undefined || val === null) val = "";
+
+                        let rowspan = 1, colspan = 1;
+
+                        if (reportType === '3' && customMerges[`${r},${c}`]) {
+                            rowspan = customMerges[`${r},${c}`];
+                        } else {
+                            const merge = merges.find(m => m.s.r === r && m.s.c === c);
+                            if (merge) {
+                                let endRowMerge = merge.e.r;
+                                if (reportType === '3' && endRowMerge >= endRowIndex) endRowMerge = endRowIndex - 1;
+
+                                rowspan = endRowMerge - merge.s.r + 1;
+                                colspan = 0;
+                                for (let mc = merge.s.c; mc <= Math.min(merge.e.c, maxCols - 1); mc++) { 
+                                    if (!isColHidden(mc) && !hiddenCols.has(mc)) colspan++; 
+                                }
+                                for (let mr = merge.s.r; mr <= endRowMerge; mr++) {
+                                    for (let mc = merge.s.c; mc <= Math.min(merge.e.c, maxCols - 1); mc++) {
+                                        if (mr === r && mc === c) continue;
+                                        skipCells[`${mr},${mc}`] = true;
+                                    }
+                                }
+                            }
+                        }
+
+                        if (colspan > 0) {
+                            let span = (colspan > 1 ? ` colspan="${colspan}"` : '') + (rowspan > 1 ? ` rowspan="${rowspan}"` : '');
+                            let classNames = [];
+                            if (c === nameColIdx) classNames.push('name-col');
+                            if (c === dobColIdx) classNames.push('nowrap');
+                            
+                            let classAttr = classNames.length > 0 ? ` class="${classNames.join(' ')}"` : '';
+
+                            if (typeof val === 'string') {
+                                val = val.replace(/\n/g, '<br>');
+                                const valStr = val.replace(/<br>/g, '').trim().toUpperCase();
+                                if (valStr === "HSXS" || valStr === "HSG" || valStr === "HSTT") {
+                                    val = `<span style="white-space: nowrap;">${valStr}</span>`;
+                                }
+                            } else if (typeof val === 'number') {
+                                val = Number.isInteger(val) ? val : Math.round(val * 10) / 10;
+                            }
+
+                            html += `<td${span}${classAttr}>${val}</td>`;
+                        }
+                    }
+                    html += '</tr>';
+                }
+                return html + '</table>';
+            }
+        });
+    </script>
+</body>
+</html>
