@@ -254,7 +254,7 @@
             min-height: 297mm;
             background-color: var(--paper-bg);
             color: #000;
-            padding: 1mm 8mm; /* Giảm thêm lề để lấy chỗ cho 55 học sinh */
+            padding: 8mm 8mm 1mm 8mm; /* Tăng lề trên lên 8mm để không bị mất chữ khi in, lề dưới nhỏ để đủ chỗ cho học sinh */
             box-shadow: var(--paper-shadow);
             display: flex;
             flex-direction: column;
@@ -266,12 +266,22 @@
 
         .vertical-text {
             writing-mode: vertical-rl;
+            -webkit-writing-mode: vertical-rl;
+            -ms-writing-mode: tb-rl; /* Bắt buộc cho các WebBrowser control cũ của Windows/IE */
             transform: rotate(180deg);
+            -webkit-transform: rotate(180deg);
+            -ms-transform: rotate(180deg);
             white-space: nowrap;
             text-align: left;
             max-height: 75px; /* Giảm thêm một chút */
             overflow: hidden;
             display: inline-block;
+        }
+
+        .no-grade-cell {
+            background-image: linear-gradient(to bottom, transparent 48%, #ff0000 48%, #ff0000 52%, transparent 52%) !important;
+            text-decoration: line-through #ff0000;
+            color: #94a3b8 !important;
         }
 
         .print-header {
@@ -325,7 +335,7 @@
             .a4-paper {
                 width: 210mm; 
                 height: 296mm; /* Giảm 1mm để tránh tạo thêm trang trắng */
-                padding: 2mm 10mm; /* Khớp với lề trên màn hình */
+                padding: 8mm 10mm 2mm 10mm; /* Tăng lề trên khi in lên 8mm để tránh mất chữ */
                 box-shadow: none;
                 page-break-after: always;
                 margin: 0;
@@ -709,7 +719,7 @@
                         
                         const page1Html = buildPageHtml(sheetName, tieuDe, namHoc, g3Text, donVi, tenTruong, gvcnHtml + tableHtml1);
                         const classHtml2 = `<div style="margin-top: 0; margin-bottom: 5px; font-weight: bold; text-align: left; font-family: 'Times New Roman', Times, serif;">Lớp: ${sheetName}</div>`;
-                        const page2Html = `<div class="a4-paper" style="padding-top: 5mm; display: flex; flex-direction: column;">
+                        const page2Html = `<div class="a4-paper" style="padding-top: 8mm; display: flex; flex-direction: column;">
                             ${classHtml2}
                             ${tableHtml2}
                         </div>`;
@@ -745,6 +755,7 @@
             function generateTableHtml(sheet, data, startRowIndex, fontSize, reportType, sttColIdx, nameColIdx, customStartDataRow = null, customEndDataRow = null) {
                 const merges = sheet['!merges'] || [];
                 const colsInfo = sheet['!cols'] || [];
+                const boldCols = new Set();
                 const isColHidden = (c) => {
                     if (reportType === '1') return false; // Hiển thị tất cả cột cho loại 1 để tránh mất cột điểm ẩn
                     return colsInfo[c] && colsInfo[c].hidden;
@@ -891,6 +902,7 @@
                 const explicitWidths = {};
                 
                 let dobColIdx = -1;
+                let hkColIdx = -1;
 
                 // Xác định các cột tiêu đề dòng 2 (dòng phụ): "1","2","3","4"...
                 const row2Data = data[startRowIndex + 1] || [];
@@ -899,11 +911,19 @@
                     if (isColHidden(c) || hiddenCols.has(c)) continue;
                     const headerRow1 = String((data[startRowIndex] || [])[c] || "").trim().toLowerCase();
                     const headerRow2 = String(row2Data[c] || "").trim().toLowerCase();
+                    if (reportType === '1') {
+                        const hLower = headerRow1.replace(/\s+/g, '').toLowerCase();
+                        if (hLower.includes('đtbm') || hLower.includes('tbm') || hLower.includes('đtb')) {
+                            if (hLower.includes('hk1') || hLower.includes('hk.1') || hLower.includes('hk2') || hLower.includes('hk.2') || hLower.includes('cn') || hLower.includes('cảnăm') || hLower.includes('canam')) {
+                                boldCols.add(c);
+                            }
+                        }
+                    }
 
                     if (headerRow1 === "tt" || headerRow1 === "stt") {
                         explicitWidths[c] = (reportType === '3') ? 2.5 : (reportType === '2' ? 2.5 : 1.5);
                     } else if (headerRow1 === "họ và tên" || headerRow1 === "họ tên") {
-                        explicitWidths[c] = (reportType === '3' || reportType === '2') ? 18 : 9;
+                        explicitWidths[c] = (reportType === '3' || reportType === '2') ? 24 : 9;
                     } else if (headerRow1.includes("ngày sinh")) {
                         explicitWidths[c] = 5;      // Ngày sinh (nowrap)
                         dobColIdx = c;
@@ -911,6 +931,7 @@
                         explicitWidths[c] = (reportType === '3' || reportType === '2') ? 3 : 2;
                     } else if (headerRow1 === "hk" || headerRow1 === "học kỳ") {
                         explicitWidths[c] = (reportType === '3' || reportType === '2') ? 4 : 3;
+                        hkColIdx = c;
                     } else if (headerRow1 === "danh hiệu") {
                         explicitWidths[c] = (reportType === '3') ? 5 : 6;
                     } else if (headerRow1 === "trạng thái lên lớp") {
@@ -954,17 +975,34 @@
                     tableStyle = `font-size: ${finalFontSize}px; line-height: ${finalLineHeight}; table-layout: auto; width: 100%;`;
                     cellStyle = `<style>
                         #${tableId} { border-collapse: collapse; }
-                        #${tableId} th, #${tableId} td {
+                        #${tableId} th {
                             padding: ${customPadding} 1px !important;
+                            border: 1px solid #000 !important;
                             white-space: nowrap;
                             text-align: center;
                             overflow: hidden;
                         }
+                        #${tableId} td {
+                            padding: ${customPadding} 1px !important;
+                            border-top: 1px dotted #000 !important;
+                            border-bottom: 1px dotted #000 !important;
+                            border-left: 1px solid #000 !important;
+                            border-right: 1px solid #000 !important;
+                            white-space: nowrap;
+                            text-align: center;
+                            overflow: hidden;
+                        }
+                        #${tableId} td.fifth-row-cell {
+                            border-bottom: 1.5px solid #000 !important;
+                        }
                         #${tableId} td.name-col, #${tableId} th.name-col {
-                            white-space: normal;
+                            white-space: nowrap;
                             text-align: left;
                             width: auto; /* Để tên chiếm phần còn lại nhưng không quá rộng */
-                            min-width: 150px;
+                            min-width: 270px;
+                        }
+                        #${tableId} td.bold-score-col {
+                            font-weight: bold;
                         }
                         /* Tiêu đề cho phép ngắt dòng để cột co lại */
                         #${tableId} th.wrap-header {
@@ -978,8 +1016,41 @@
                             width: 1%;
                         }
                     </style>`;
-                } else if (reportType === '2' || reportType === '3') {
-                    // Mục 2 & 3 dùng Table fixed để kiểm soát độ rộng % chính xác
+                } else if (reportType === '2') {
+                    tableStyle = `font-size: ${finalFontSize}px; line-height: ${finalLineHeight}; table-layout: fixed; width: 100%;`;
+                    cellStyle = `<style>
+                        #${tableId} { border-collapse: collapse; }
+                        #${tableId} th { 
+                            padding: ${customPadding} 1px !important; 
+                            border: 1px solid black !important;
+                            text-align: center;
+                            word-wrap: break-word;
+                            overflow: hidden;
+                        }
+                        #${tableId} td { 
+                            padding: ${customPadding} 1px !important; 
+                            border-top: 1px dotted #000 !important;
+                            border-bottom: 1px dotted #000 !important;
+                            border-left: 1px solid #000 !important;
+                            border-right: 1px solid #000 !important;
+                            text-align: center;
+                            word-wrap: break-word;
+                            overflow: hidden;
+                        }
+                        #${tableId} td.fifth-row-cell {
+                            border-bottom: 1.5px solid #000 !important;
+                        }
+                        #${tableId} td.name-col, #${tableId} th.name-col { 
+                            text-align: left; 
+                            white-space: nowrap !important; /* Mục 2 ép 1 dòng */
+                            padding-left: 3px !important;
+                        }
+                        #${tableId} th.wrap-header {
+                            white-space: normal;
+                        }
+                    </style>`;
+                } else if (reportType === '3') {
+                    // Mục 3 dùng Table fixed để kiểm soát độ rộng % chính xác
                     tableStyle = `font-size: ${finalFontSize}px; line-height: ${finalLineHeight}; table-layout: fixed; width: 100%;`;
                     cellStyle = `<style>
                         #${tableId} { border-collapse: collapse; }
@@ -990,9 +1061,9 @@
                             word-wrap: break-word;
                             overflow: hidden;
                         }
-                        #${tableId} td.name-col { 
+                        #${tableId} td.name-col, #${tableId} th.name-col { 
                             text-align: left; 
-                            white-space: nowrap; /* Mục 2 ép 1 dòng */
+                            white-space: nowrap !important; /* Mục 2 ép 1 dòng */
                             padding-left: 3px !important;
                         }
                         #${tableId} th.wrap-header {
@@ -1134,6 +1205,103 @@
                     }
                 }
 
+                const noGradeRows = new Set();
+                if (reportType === '3') {
+                    for (let r = dataStartRow; r <= endRowIndex; r += 3) {
+                        let nameVal = "";
+                        for (let nc = nameColIdx; nc <= nameColIdx + 2; nc++) {
+                            const cell = sheet[XLSX.utils.encode_cell({ r: r, c: nc })];
+                            const v = cell ? String(cell.v || "").trim() : "";
+                            if (v && !nameVal) nameVal = v;
+                        }
+                        let sttVal = "";
+                        const sttCell = sheet[XLSX.utils.encode_cell({ r: r, c: sttColIdx })];
+                        sttVal = sttCell ? String(sttCell.v || "").trim() : "";
+                        
+                        const nameL = nameVal.toLowerCase();
+                        const sttL = sttVal.toLowerCase();
+                        if ((sttVal || nameVal) && !nameL.includes("học kỳ") && !nameL.includes("cả năm") && !sttL.includes("học kỳ")) {
+                            let hasAnyGrade = false;
+                            for (let gr = r; gr < r + 3; gr++) {
+                                for (let c = 0; c < maxCols; c++) {
+                                    if (isColHidden(c) || hiddenCols.has(c)) continue;
+                                    if (c === sttColIdx || c === nameColIdx || c === dobColIdx || c === hkColIdx) continue;
+                                    
+                                    const h1 = String((data[startRowIndex] || [])[c] || "").trim().toLowerCase();
+                                    const h2 = String((data[startRowIndex + 1] || [])[c] || "").trim().toLowerCase();
+                                    if (h1.includes("giới tính") || h1.includes("lên lớp") || h1.includes("danh hiệu") || h1.includes("nghỉ") || h1.includes("trạng thái") ||
+                                        h2.includes("giới tính") || h2.includes("lên lớp") || h2.includes("danh hiệu") || h2.includes("nghỉ") || h2.includes("trạng thái") ||
+                                        h2 === "cp" || h2 === "kp") {
+                                        continue;
+                                    }
+                                    
+                                    const cellAddress = XLSX.utils.encode_cell({ r: gr, c: c });
+                                    const cell = sheet[cellAddress];
+                                    let val = cell ? String(cell.v || "").trim() : "";
+                                    if (!val && data[gr] && data[gr][c] !== undefined) {
+                                        val = String(data[gr][c] || "").trim();
+                                    }
+                                    if (val !== "") {
+                                        hasAnyGrade = true;
+                                        break;
+                                    }
+                                }
+                                if (hasAnyGrade) break;
+                            }
+                            if (!hasAnyGrade) {
+                                noGradeRows.add(r);
+                                noGradeRows.add(r + 1);
+                                noGradeRows.add(r + 2);
+                            }
+                        }
+                    }
+                } else {
+                    for (let r = dataStartRow; r <= endRowIndex; r++) {
+                        let nameVal = "";
+                        for (let nc = nameColIdx; nc <= nameColIdx + 2; nc++) {
+                            const cell = sheet[XLSX.utils.encode_cell({ r: r, c: nc })];
+                            const v = cell ? String(cell.v || "").trim() : "";
+                            if (v && !nameVal) nameVal = v;
+                        }
+                        let sttVal = "";
+                        const sttCell = sheet[XLSX.utils.encode_cell({ r: r, c: sttColIdx })];
+                        sttVal = sttCell ? String(sttCell.v || "").trim() : "";
+                        
+                        const nameL = nameVal.toLowerCase();
+                        const sttL = sttVal.toLowerCase();
+                        if ((sttVal || nameVal) && !nameL.includes("học kỳ") && !nameL.includes("cả năm") && !sttL.includes("học kỳ")) {
+                            let hasAnyGrade = false;
+                            for (let c = 0; c < maxCols; c++) {
+                                if (isColHidden(c) || hiddenCols.has(c)) continue;
+                                if (c === sttColIdx || c === nameColIdx || c === dobColIdx || c === hkColIdx) continue;
+                                
+                                const h1 = String((data[startRowIndex] || [])[c] || "").trim().toLowerCase();
+                                const h2 = String((data[startRowIndex + 1] || [])[c] || "").trim().toLowerCase();
+                                if (h1.includes("giới tính") || h1.includes("lên lớp") || h1.includes("danh hiệu") || h1.includes("nghỉ") || h1.includes("trạng thái") ||
+                                    h2.includes("giới tính") || h2.includes("lên lớp") || h2.includes("danh hiệu") || h2.includes("nghỉ") || h2.includes("trạng thái") ||
+                                    h2 === "cp" || h2 === "kp") {
+                                    continue;
+                                }
+                                
+                                const cellAddress = XLSX.utils.encode_cell({ r: r, c: c });
+                                const cell = sheet[cellAddress];
+                                let val = cell ? String(cell.v || "").trim() : "";
+                                if (!val && data[r] && data[r][c] !== undefined) {
+                                    val = String(data[r][c] || "").trim();
+                                }
+                                if (val !== "") {
+                                    hasAnyGrade = true;
+                                    break;
+                                }
+                            }
+                            if (!hasAnyGrade) {
+                                noGradeRows.add(r);
+                            }
+                        }
+                    }
+                }
+
+                let renderedStudentIndex = 0;
                 // DATA
                 for (let r = dataStartRow; r <= endRowIndex; r++) {
                     const rowData = data[r] || [];
@@ -1154,7 +1322,21 @@
                         if (nameVal === "" && sttVal === "") continue;
                     }
 
-                    html += '<tr>';
+                    renderedStudentIndex++;
+                    let rowStyle = '';
+                    if (reportType === '3' && hkColIdx !== -1) {
+                        let hkVal = "";
+                        const hkCell = sheet[XLSX.utils.encode_cell({ r: r, c: hkColIdx })];
+                        if (hkCell) {
+                            hkVal = String(hkCell.v || "").trim().toUpperCase();
+                        } else if (data[r] && data[r][hkColIdx] !== undefined) {
+                            hkVal = String(data[r][hkColIdx] || "").trim().toUpperCase();
+                        }
+                        if (hkVal === "CN" || hkVal === "CẢ NĂM") {
+                            rowStyle = ' style="font-weight: bold;"';
+                        }
+                    }
+                    html += `<tr${rowStyle}>`;
                     for (let c = 0; c < maxCols; c++) {
                         if (isColHidden(c) || hiddenCols.has(c)) continue;
                         if (skipCells[`${r},${c}`]) continue;
@@ -1199,6 +1381,13 @@
                             let classNames = [];
                             if (c === nameColIdx) classNames.push('name-col');
                             if (c === dobColIdx) classNames.push('nowrap');
+                            if (reportType === '1' && boldCols.has(c)) classNames.push('bold-score-col');
+                            if ((reportType === '1' || reportType === '2') && renderedStudentIndex % 5 === 0) {
+                                classNames.push('fifth-row-cell');
+                            }
+                            if (noGradeRows.has(r)) {
+                                classNames.push('no-grade-cell');
+                            }
                             
                             let classAttr = classNames.length > 0 ? ` class="${classNames.join(' ')}"` : '';
 
