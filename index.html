@@ -305,6 +305,13 @@
             color: #94a3b8 !important;
         }
 
+        .no-border-row {
+            color: transparent !important;
+        }
+        .no-border-row td, .no-border-row th {
+            border: hidden !important;
+        }
+
         .print-header {
             display: flex;
             justify-content: space-between;
@@ -1096,6 +1103,20 @@
                     cellStyle = `<style>#${tableId} { table-layout: fixed; width: 100%; } #${tableId} th, #${tableId} td { padding: ${customPadding} !important; word-wrap: break-word; overflow-wrap: break-word; }</style>`;
                 }
 
+                cellStyle += `<style>
+                    #${tableId} tr.no-border-row td, #${tableId} tr.no-border-row th {
+                        border: hidden !important;
+                        color: transparent !important;
+                    }
+                    #${tableId} tr.first-empty-row td, #${tableId} tr.first-empty-row th {
+                        border-bottom: hidden !important;
+                        border-left: hidden !important;
+                        border-right: hidden !important;
+                        border-top: 1px solid #000 !important;
+                        color: transparent !important;
+                    }
+                </style>`;
+
                 let html = cellStyle;
                 html += `<table id="${tableId}" class="print-table" style="${tableStyle}">`;
                 // Chỉ dùng colgroup cho type 2 và 3
@@ -1322,6 +1343,31 @@
                     }
                 }
 
+                // Tự động đếm sĩ số học sinh thực tế trong lớp
+                let actualStudentCount = 0;
+                for (let r = dataStartRow; r <= (reportType === '3' ? Math.min(dataStartRow + 200, data.length - 1) : endRowIndex); r++) {
+                    const rowData = data[r] || [];
+                    let nameVal = "";
+                    for (let nc = nameColIdx; nc <= nameColIdx + 2; nc++) {
+                        const cellAddress = XLSX.utils.encode_cell({ r: r, c: nc });
+                        const cell = sheet[cellAddress];
+                        const v = cell ? String(cell.v || "").trim() : "";
+                        if (v && !nameVal) nameVal = v;
+                    }
+                    if (reportType === '1' && nameVal === "" && rowData[nameColIdx + 1]) {
+                        nameVal = String(rowData[nameColIdx + 1]).trim();
+                    }
+                    if (nameVal !== "") {
+                        if (reportType === '3') {
+                            if ((r - dataStartRow) % 3 === 0) {
+                                actualStudentCount++;
+                            }
+                        } else {
+                            actualStudentCount++;
+                        }
+                    }
+                }
+
                 let renderedStudentIndex = 0;
                 // DATA
                 for (let r = dataStartRow; r <= endRowIndex; r++) {
@@ -1333,6 +1379,10 @@
                         const cell = sheet[cellAddress];
                         const v = cell ? String(cell.v || "").trim() : "";
                         if (v && !nameVal) nameVal = v;
+                    }
+
+                    if (reportType === '1' && nameVal === "" && rowData[nameColIdx + 1]) {
+                        nameVal = String(rowData[nameColIdx + 1]).trim();
                     }
 
                     let sttVal = "";
@@ -1357,7 +1407,22 @@
                             rowStyle = ' style="font-weight: bold;"';
                         }
                     }
-                    html += `<tr${rowStyle}>`;
+
+                    let rowClassNames = [];
+                    if (reportType === '1' && actualStudentCount < 55) {
+                        if (r === dataStartRow + actualStudentCount) {
+                            rowClassNames.push('first-empty-row');
+                        } else if (r > dataStartRow + actualStudentCount) {
+                            rowClassNames.push('no-border-row');
+                        }
+                    }
+                    
+                    let rowClassAttr = "";
+                    if (rowClassNames.length > 0) {
+                        rowClassAttr = ` class="${rowClassNames.join(' ')}"`;
+                    }
+
+                    html += `<tr${rowStyle}${rowClassAttr}>`;
                     for (let c = 0; c < maxCols; c++) {
                         if (isColHidden(c) || hiddenCols.has(c)) continue;
                         if (skipCells[`${r},${c}`]) continue;

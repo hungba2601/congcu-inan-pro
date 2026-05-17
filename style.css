@@ -364,6 +364,13 @@ body {
     font-weight: bold;
 }
 
+.no-border-row {
+    color: transparent !important;
+}
+.no-border-row td, .no-border-row th {
+    border: hidden !important;
+}
+
 /* Hidden elements in screen mode */
 .print-container {
     display: none;
