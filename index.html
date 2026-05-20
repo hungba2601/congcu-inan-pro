@@ -1434,23 +1434,35 @@
                         }
                     }
                     
+                    // Đánh dấu dòng Cả năm tổng kết để fixCoPhepCaNam tìm được
+                    let isCaNamSummaryRow = false;
+                    if (reportType === '3' && data[r]) {
+                        for (let colIdx = 0; colIdx < Math.min(data[r].length, 5); colIdx++) {
+                            const valStr = String(data[r][colIdx] || "").trim().toLowerCase();
+                            if (valStr.includes("cả năm") || valStr.includes("ca nam")) {
+                                // Chỉ là dòng tổng kết nếu STT trống (không phải dòng học sinh CN)
+                                const sttCheck = String((data[r] || [])[sttColIdx] || '').trim();
+                                const nameCheck = String((data[r] || [])[nameColIdx] || '').trim();
+                                if (sttCheck === '' && nameCheck === '') isCaNamSummaryRow = true;
+                                else isCaNamSummaryRow = true; // vẫn giữ cho backward compat
+                                break;
+                            }
+                        }
+                    }
+
+                    // Thêm class đặc biệt nếu là dòng Cả năm tổng kết (STT rỗng)
+                    if (isCaNamSummaryRow) {
+                        const sttCheck = String((data[r] || [])[sttColIdx] || '').trim();
+                        const nameCheck = String((data[r] || [])[nameColIdx] || '').trim();
+                        if (sttCheck === '' && nameCheck === '') rowClassNames.push('summary-canam-row');
+                    }
+
                     let rowClassAttr = "";
                     if (rowClassNames.length > 0) {
                         rowClassAttr = ` class="${rowClassNames.join(' ')}"`;
                     }
 
                     html += `<tr${rowStyle}${rowClassAttr}>`;
-                    
-                    let isCaNamSummaryRow = false;
-                    if (reportType === '3' && data[r]) {
-                        for (let colIdx = 0; colIdx < Math.min(data[r].length, 5); colIdx++) {
-                            const valStr = String(data[r][colIdx] || "").trim().toLowerCase();
-                            if (valStr.includes("cả năm") || valStr.includes("ca nam")) {
-                                isCaNamSummaryRow = true;
-                                break;
-                            }
-                        }
-                    }
 
                     for (let c = 0; c < maxCols; c++) {
                         if (isColHidden(c) || hiddenCols.has(c)) continue;
@@ -1556,16 +1568,25 @@
             function fixCoPhepCaNam(container) {
                 const tables = container.querySelectorAll('table.print-table');
                 tables.forEach(table => {
-                    const allRows = Array.from(table.querySelectorAll('tr'));
+                    // Tìm dòng "Cả năm" tổng kết (đã được đánh dấu bằng class)
+                    const caNamRow = table.querySelector('tr.summary-canam-row');
+                    if (!caNamRow) return;
 
-                    // Tìm cột "Có Phép" từ các ô th (header)
+                    // Tìm 2 dòng trước: HKII (tr ngay trước) và HKI (tr trước nữa)
+                    const allRows = Array.from(table.querySelectorAll('tr'));
+                    const caNamIdx = allRows.indexOf(caNamRow);
+                    if (caNamIdx < 2) return;
+                    const hk2Row = allRows[caNamIdx - 1];
+                    const hk1Row = allRows[caNamIdx - 2];
+
+                    // Tìm cột "Có Phép" từ header (th)
                     let coPhepColPos = -1;
                     for (const row of allRows) {
                         const ths = Array.from(row.querySelectorAll('th'));
                         if (!ths.length) continue;
                         let pos = 0;
                         for (const th of ths) {
-                            const txt = th.textContent.trim().toLowerCase().replace(/\s+/g, ' ');
+                            const txt = th.textContent.trim().toLowerCase().replace(/[\s\n]+/g, ' ');
                             if (txt === 'cp' || txt.includes('có phép')) {
                                 coPhepColPos = pos;
                                 break;
@@ -1576,7 +1597,7 @@
                     }
                     if (coPhepColPos === -1) return;
 
-                    // Hàm lấy ô td tại vị trí cột pos (tính colspan)
+                    // Hàm lấy td tại vị trí cột (tính colspan)
                     const getCellAtPos = (row, targetPos) => {
                         let pos = 0;
                         for (const cell of row.querySelectorAll('td')) {
@@ -1587,29 +1608,12 @@
                         return null;
                     };
 
-                    // Tìm các dòng tổng kết HKI, HKII, Cả năm bằng nội dung ô td đầu tiên
-                    let hk1Row = null, hk2Row = null, caNamRow = null;
-                    for (const row of allRows) {
-                        const tds = row.querySelectorAll('td');
-                        if (!tds.length) continue;
-                        // Gom text tất cả td đầu để xác định loại dòng
-                        let rowLabel = '';
-                        for (let i = 0; i < Math.min(tds.length, 6); i++) {
-                            rowLabel += tds[i].textContent.trim().toLowerCase() + ' ';
-                        }
-                        rowLabel = rowLabel.trim();
-                        if (!hk1Row && (rowLabel.includes('học kỳ i') && !rowLabel.includes('học kỳ ii'))) hk1Row = row;
-                        else if (!hk2Row && rowLabel.includes('học kỳ ii')) hk2Row = row;
-                        else if (!caNamRow && (rowLabel.includes('cả năm') || rowLabel.includes('ca nam'))) caNamRow = row;
-                    }
-                    if (!hk1Row || !hk2Row || !caNamRow) return;
-
                     const cell1 = getCellAtPos(hk1Row, coPhepColPos);
                     const cell2 = getCellAtPos(hk2Row, coPhepColPos);
                     const cellCaNam = getCellAtPos(caNamRow, coPhepColPos);
 
                     if (!cell1 || !cell2 || !cellCaNam) return;
-                    if (cellCaNam.textContent.trim() !== '') return; // đã có giá trị, bỏ qua
+                    if (cellCaNam.textContent.trim() !== '') return;
 
                     const v1 = parseFloat(cell1.textContent.trim());
                     const v2 = parseFloat(cell2.textContent.trim());
