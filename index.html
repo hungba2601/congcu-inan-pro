@@ -1343,67 +1343,20 @@
                     }
                 }
 
-                // === VÁ DỮ LIỆU CÓ PHÉP CẢ NĂM = HKI + HKII TRỰC TIẾP VÀO SHEET ===
+                // === TÌM CỘT CÓ PHÉP (dùng khi render dòng Cả năm tổng kết) ===
+                let coPhepColIdx = -1;
                 if (reportType === '3') {
-                    // Bước 1: Tìm cột Có Phép - quét toàn bộ header (cả 2 dòng), mọi dạng text
-                    let coPhepColIdx = -1;
                     for (let hRow = startRowIndex; hRow <= startRowIndex + 1; hRow++) {
                         for (let c = 0; c < maxCols; c++) {
-                            const addr = XLSX.utils.encode_cell({ r: hRow, c: c });
-                            const cell = sheet[addr];
-                            const hVal = cell ? String(cell.v || '').trim().toLowerCase() : '';
-                            if (hVal === 'cp' || hVal.includes('có phép') || hVal.includes('co phep')) {
+                            const hVal = String((data[hRow] || [])[c] || '').trim().toLowerCase();
+                            if (hVal === 'cp' || hVal.includes('có phép')) {
                                 coPhepColIdx = c;
                                 break;
                             }
                         }
                         if (coPhepColIdx !== -1) break;
                     }
-
-                    // Bước 2: Tìm dòng "Cả năm" trong phần tổng kết cuối bảng (quét toàn bộ cột)
-                    if (coPhepColIdx !== -1) {
-                        let caNamSumRow = -1;
-                        for (let r = endRowIndex; r >= dataStartRow; r--) {
-                            const rowArr = data[r] || [];
-                            for (let ci = 0; ci < rowArr.length; ci++) {
-                                const lbl = String(rowArr[ci] || '').trim().toLowerCase();
-                                if (lbl.includes('cả năm') || lbl.includes('ca nam')) {
-                                    // Xác nhận đây là dòng tổng kết (không phải dòng học sinh - STT phải rỗng)
-                                    const sttCell = sheet[XLSX.utils.encode_cell({ r: r, c: sttColIdx })];
-                                    const sttVal = sttCell ? String(sttCell.v || '').trim() : '';
-                                    if (sttVal === '' || isNaN(Number(sttVal))) {
-                                        caNamSumRow = r;
-                                        break;
-                                    }
-                                }
-                            }
-                            if (caNamSumRow !== -1) break;
-                        }
-
-                        // Bước 3: Đọc HKI và HKII từ 2 dòng liền trước, vá vào sheet
-                        if (caNamSumRow >= 2) {
-                            const getV = (row, col) => {
-                                const c2 = sheet[XLSX.utils.encode_cell({ r: row, c: col })];
-                                const raw = c2 ? c2.v : (data[row] ? data[row][col] : undefined);
-                                return (raw !== undefined && raw !== null && String(raw).trim() !== '') ? parseFloat(raw) : null;
-                            };
-                            const v1 = getV(caNamSumRow - 2, coPhepColIdx);
-                            const v2 = getV(caNamSumRow - 1, coPhepColIdx);
-                            if (v1 !== null && v2 !== null && !isNaN(v1) && !isNaN(v2)) {
-                                const sum = v1 + v2;
-                                // Vá vào cả sheet lẫn data để đảm bảo render đúng dù có hay không targetCol shift
-                                const patchAddr  = XLSX.utils.encode_cell({ r: caNamSumRow, c: coPhepColIdx });
-                                const patchAddr1 = XLSX.utils.encode_cell({ r: caNamSumRow, c: coPhepColIdx - 1 });
-                                if (!sheet[patchAddr]  || String(sheet[patchAddr].v  || '').trim() === '') sheet[patchAddr]  = { v: sum, t: 'n' };
-                                if (coPhepColIdx > 0 && (!sheet[patchAddr1] || String(sheet[patchAddr1].v || '').trim() === '')) sheet[patchAddr1] = { v: sum, t: 'n' };
-                                if (!data[caNamSumRow]) data[caNamSumRow] = [];
-                                if (String(data[caNamSumRow][coPhepColIdx] || '').trim() === '') data[caNamSumRow][coPhepColIdx] = sum;
-                                if (coPhepColIdx > 0 && String(data[caNamSumRow][coPhepColIdx - 1] || '').trim() === '') data[caNamSumRow][coPhepColIdx - 1] = sum;
-                            }
-                        }
-                    }
                 }
-                // === KẾT THÚC VÁ DỮ LIỆU CÓ PHÉP ===
 
                 // Tự động đếm sĩ số học sinh thực tế trong lớp
                 let actualStudentCount = 0;
