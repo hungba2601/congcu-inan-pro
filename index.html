@@ -1368,6 +1368,57 @@
                     }
                 }
 
+                // Dò từ dưới lên, tìm dòng "Cả năm" đầu tiên trong bảng thống kê cuối,
+                // dịch toàn bộ dữ liệu sang trái 1 cột để căn đúng với header.
+                if (reportType === '3') {
+                    let caNamRow = -1;
+                    for (let r = endRowIndex; r >= dataStartRow; r--) {
+                        // Quét nhiều cột (sttColIdx, nameColIdx, và thêm 1-2 cột kế)
+                        for (let chkC = sttColIdx; chkC <= Math.min(nameColIdx + 2, maxCols - 1); chkC++) {
+                            const chkCell = sheet[XLSX.utils.encode_cell({ r: r, c: chkC })];
+                            const chkVal = chkCell
+                                ? String(chkCell.v || '').trim()
+                                : String((data[r] || [])[chkC] || '').trim();
+                            console.log(`[DEBUG] r=${r} c=${chkC} val="${chkVal}"`);
+                            // So sánh không phân biệt hoa/thường, dùng includes để bắt biến thể
+                            if (chkVal.toLowerCase().includes('c') && chkVal.toLowerCase().includes('n') &&
+                                (chkVal.toLowerCase().includes('cả năm') || chkVal.toLowerCase().includes('ca nam') ||
+                                 chkVal.toLowerCase().includes('cả năm'))) {
+                                caNamRow = r;
+                                console.log(`[DEBUG] Found Cả năm at row=${r}, col=${chkC}`);
+                                break;
+                            }
+                        }
+                        if (caNamRow !== -1) break;
+                    }
+
+                    if (caNamRow !== -1) {
+                        const r = caNamRow;
+                        // In toàn bộ giá trị các cột trước khi shift
+                        for (let dbgC = 0; dbgC <= Math.min(20, maxCols); dbgC++) {
+                            const dbgCell = sheet[XLSX.utils.encode_cell({ r: r, c: dbgC })];
+                            const dbgVal = dbgCell ? String(dbgCell.v || '') : '(empty)';
+                            console.log(`[PRE-SHIFT col${dbgC}] "${dbgVal}"`);
+                        }
+                        console.log(`[DEBUG] nameColIdx=${nameColIdx} sttColIdx=${sttColIdx} maxCols=${maxCols}`);
+                        // Shift từ sttColIdx+1 để bao gồm cả cột ngay sau label
+                        const shiftStart = sttColIdx + 1;
+                        console.log(`[DEBUG] Shifting row ${r} left from col ${shiftStart}`);
+                        for (let c = shiftStart; c < maxCols; c++) {
+                            const srcAddr = XLSX.utils.encode_cell({ r: r, c: c + 1 });
+                            const dstAddr = XLSX.utils.encode_cell({ r: r, c: c });
+                            const srcCell = sheet[srcAddr];
+                            if (srcCell) { sheet[dstAddr] = Object.assign({}, srcCell); }
+                            else { delete sheet[dstAddr]; }
+                            if (data[r]) data[r][c] = (data[r][c + 1] !== undefined) ? data[r][c + 1] : '';
+                        }
+                        delete sheet[XLSX.utils.encode_cell({ r: r, c: maxCols })];
+                        if (data[r]) data[r][maxCols] = '';
+                    } else {
+                        console.log('[DEBUG] Cả năm row NOT found!');
+                    }
+                }
+
                 let renderedStudentIndex = 0;
                 // DATA
                 for (let r = dataStartRow; r <= endRowIndex; r++) {
@@ -1465,7 +1516,7 @@
                         if (colspan > 0) {
                             let span = (colspan > 1 ? ` colspan="${colspan}"` : '') + (rowspan > 1 ? ` rowspan="${rowspan}"` : '');
                             let classNames = [];
-                            if (c === nameColIdx) classNames.push('name-col');
+                            if (c === nameColIdx && typeof val !== 'number') classNames.push('name-col');
                             if (c === dobColIdx) classNames.push('nowrap');
                             if (reportType === '1' && boldCols.has(c)) classNames.push('bold-score-col');
                             if ((reportType === '1' || reportType === '2') && renderedStudentIndex % 5 === 0) {
