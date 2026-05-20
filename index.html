@@ -1447,6 +1447,17 @@
                             rowspan = customMerges[`${r},${c}`];
                         } else {
                             let merge = merges.find(m => m.s.r === r && m.s.c === c);
+
+                            // Dòng tổng kết (Học kỳ I/II/Cả năm) ở cuối bảng Mục 3:
+                            // Nếu merge chỉ span 2 cột (A→B, tức 0→1), cần mở rộng thêm 1 cột
+                            // để dữ liệu bắt đầu từ cột D (index 3), đồng nhất với HKI/HKII
+                            if (reportType === '3' && merge && merge.s.c === 0 && merge.e.c === 1) {
+                                const rowText = String((data[r] || [])[merge.s.c] || (data[r] || [])[1] || '').toLowerCase();
+                                if (rowText.includes('học kỳ') || rowText.includes('cả năm') || rowText.includes('ca nam')) {
+                                    merge = Object.assign({}, merge, { e: Object.assign({}, merge.e, { c: 2 }) });
+                                }
+                            }
+
                             if (merge) {
                                 let endRowMerge = merge.e.r;
                                 if (reportType === '3' && endRowMerge >= endRowIndex) endRowMerge = endRowIndex - 1;
