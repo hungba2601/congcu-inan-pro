@@ -1343,6 +1343,53 @@
                     }
                 }
 
+                // === TỰ ĐỘNG TÍNH TỔNG NGÀY NGHỈ CÓ PHÉP CẢ NĂM = HKI + HKII ===
+                let coPhepColIdx = -1;
+                let coPhepCaNam = null;
+
+                if (reportType === '3') {
+                    // Bước 1: Tìm cột "Có Phép" (hoặc "CP") trong 2 dòng tiêu đề
+                    for (let hRow = startRowIndex; hRow <= startRowIndex + 1; hRow++) {
+                        for (let c = 0; c < maxCols; c++) {
+                            const hVal = String((data[hRow] || [])[c] || '').trim().toLowerCase();
+                            if (hVal === 'cp' || hVal.includes('có phép')) {
+                                coPhepColIdx = c;
+                                break;
+                            }
+                        }
+                        if (coPhepColIdx !== -1) break;
+                    }
+
+                    // Bước 2: Tìm dòng HKI và HKII trong phần tổng kết cuối bảng và đọc giá trị
+                    if (coPhepColIdx !== -1) {
+                        let hk1Val = null, hk2Val = null;
+                        for (let r2 = dataStartRow; r2 <= Math.min(dataStartRow + 300, data.length - 1); r2++) {
+                            const rowData2 = data[r2] || [];
+                            for (let ci = 0; ci < Math.min(rowData2.length, 10); ci++) {
+                                const label = String(rowData2[ci] || '').trim().toLowerCase();
+                                if (label === 'học kỳ i' || label === 'hk i' || label === 'hki' || label === 'học kỳ 1') {
+                                    const cellObj = sheet[XLSX.utils.encode_cell({ r: r2, c: coPhepColIdx })];
+                                    const v = cellObj ? cellObj.v : rowData2[coPhepColIdx];
+                                    if (v !== undefined && v !== null && String(v).trim() !== '') {
+                                        hk1Val = parseFloat(v);
+                                    }
+                                }
+                                if (label === 'học kỳ ii' || label === 'hk ii' || label === 'hkii' || label === 'học kỳ 2') {
+                                    const cellObj = sheet[XLSX.utils.encode_cell({ r: r2, c: coPhepColIdx })];
+                                    const v = cellObj ? cellObj.v : rowData2[coPhepColIdx];
+                                    if (v !== undefined && v !== null && String(v).trim() !== '') {
+                                        hk2Val = parseFloat(v);
+                                    }
+                                }
+                            }
+                        }
+                        if (hk1Val !== null && hk2Val !== null && !isNaN(hk1Val) && !isNaN(hk2Val)) {
+                            coPhepCaNam = hk1Val + hk2Val;
+                        }
+                    }
+                }
+                // === KẾT THÚC TÍNH TỔNG CÓ PHÉP ===
+
                 // Tự động đếm sĩ số học sinh thực tế trong lớp
                 let actualStudentCount = 0;
                 for (let r = dataStartRow; r <= (reportType === '3' ? Math.min(dataStartRow + 200, data.length - 1) : endRowIndex); r++) {
@@ -1454,6 +1501,12 @@
                         }
                         
                         if (val === undefined || val === null) val = "";
+
+                        // Tự động điền Tổng Có Phép Cả Năm = HKI + HKII nếu ô đang trống
+                        if (reportType === '3' && isCaNamSummaryRow && c === coPhepColIdx &&
+                            (val === '' || val === undefined || val === null) && coPhepCaNam !== null) {
+                            val = coPhepCaNam;
+                        }
 
                         let rowspan = 1, colspan = 1;
 
