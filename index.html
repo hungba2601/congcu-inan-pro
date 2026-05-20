@@ -1424,12 +1424,11 @@
 
                     html += `<tr${rowStyle}${rowClassAttr}>`;
                     
-                    // Phát hiện dòng "Cả năm" trong bảng tổng kết cuối (không phải dòng CN của từng học sinh)
                     let isCaNamSummaryRow = false;
                     if (reportType === '3' && data[r]) {
                         for (let colIdx = 0; colIdx < Math.min(data[r].length, 5); colIdx++) {
                             const valStr = String(data[r][colIdx] || "").trim().toLowerCase();
-                            if (valStr === 'cả năm' || valStr === 'ca nam') {
+                            if (valStr.includes("cả năm") || valStr.includes("ca nam")) {
                                 isCaNamSummaryRow = true;
                                 break;
                             }
@@ -1441,6 +1440,9 @@
                         if (skipCells[`${r},${c}`]) continue;
 
                         let targetCol = c;
+                        if (isCaNamSummaryRow && c >= 2) {
+                            targetCol = c + 1;
+                        }
 
                         let val = "";
                         const cellAddress = XLSX.utils.encode_cell({ r: r, c: targetCol });
@@ -1459,11 +1461,9 @@
                             rowspan = customMerges[`${r},${c}`];
                         } else {
                             let merge = merges.find(m => m.s.r === r && m.s.c === c);
-                            // Dòng "Cả năm" trong Excel thường merge rộng hơn HKI/HKII (thêm cột HK)
-                            // → Thu gọn merge về đúng 2 cột (STT+Tên) như các dòng HKI/HKII
                             if (isCaNamSummaryRow && merge) {
                                 if (merge.s.c === 0 && merge.e.c >= 2) {
-                                    merge = { s: { r: merge.s.r, c: 0 }, e: { r: merge.e.r, c: 1 } };
+                                    merge.e.c = 1;
                                 } else if (merge.s.c === 1 && merge.e.c >= 2) {
                                     merge = null;
                                 }
